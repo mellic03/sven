@@ -31,6 +31,19 @@ BarData_load( const sven::Vertex *vertices )
 
     return d;
 }
+static BarData
+BarData_load2( const glm::vec4 pos[4] )
+{
+    BarData d;
+
+    d.v1x = pos[0].x, d.v1y = pos[0].y;
+    d.v2x = pos[1].x, d.v2y = pos[1].y;
+    d.v3x = pos[2].x, d.v3y = pos[2].y;
+
+    d.denom = (d.v2y-d.v3y)*(d.v1x-d.v3x) + (d.v3x-d.v2x)*(d.v1y-d.v3y);
+
+    return d;
+}
 
 
 static void
@@ -86,10 +99,10 @@ void sven::internal::rasterize( const Vertex *vertices, Texture &dst_depth, Text
     int       w = dst_color.w;
     int       h = dst_color.h;
 
-    int xmin = sven::clamp(int(boundsf[0] + 0.5f), 0, w-1);
-    int xmax = sven::clamp(int(boundsf[1] + 0.5f), 0, w-1);
-    int ymin = sven::clamp(int(boundsf[2] + 0.5f), 0, h-1);
-    int ymax = sven::clamp(int(boundsf[3] + 0.5f), 0, h-1);
+    int xmin = sven::clamp(int(boundsf[0]), 0, w-1);
+    int xmax = sven::clamp(int(boundsf[1]), 0, w-1);
+    int ymin = sven::clamp(int(boundsf[2]), 0, h-1);
+    int ymax = sven::clamp(int(boundsf[3]), 0, h-1);
 
     if (xmin == xmax || ymin == ymax)
     {
@@ -139,10 +152,115 @@ void sven::internal::rasterize( const Vertex *vertices, Texture &dst_depth, Text
 
                 float d = std::min(bWeights[0], std::min(bWeights[1], bWeights[2]));
                       d = 1 - (1-d)*(1-d);
+                      d = (d > 0.1f) ? 1.0f : 0.0f;
 
                 vec3 N  = sven::baryp(norm[0], norm[1], norm[2], bWeights);
                      N *= sv_FragCoord.w;
-                     N  = (normalize(N) * 0.5f + 0.5f);
+                     N  = d * (normalize(N) * 0.5f + 0.5f);
+
+                vec3 L = normalize(vec3(1));
+                N = vec3(1) * max(dot(N, L), 0.0f);
+                N = 255.0f *  clamp(N, 0.0f, 1.0f);
+
+                uint32_t color = packRGB(N.x, N.y, N.z);
+
+                pixel_buf[idx] = color;
+            }
+        }
+    }
+}
+
+
+void sven::internal::rasterize( const VaryingArray &buf, int vidx,
+                                Texture &dst_depth, Texture &dst_color )
+{
+    using namespace glm;
+
+    static vec4 pos[3];
+    static vec3 norm[3];
+    static vec2 uv[3];
+
+    std::memcpy(pos,  &buf.pos[vidx],  sizeof(pos));
+    std::memcpy(norm, &buf.norm[vidx], sizeof(norm));
+    std::memcpy(uv,   &buf.uv[vidx],   sizeof(uv));
+
+    vec3  color[3] = { vec3(255, 0, 0), vec3(0, 255, 0), vec3(0, 0, 255) };
+    float inv_z[3] = { pos[0].w, pos[1].w, pos[2].w };
+
+    for (int i=0; i<3; i++)
+    {
+        norm[i]  *= inv_z[i];
+        color[i] *= inv_z[i];
+    }
+
+    float boundsf[4] = {+INFINITY, -INFINITY, +INFINITY, -INFINITY};
+    int   boundsi[4];
+    float bWeights[4];
+
+    for (int i=0; i<3; i++)
+    {
+        boundsf[0] = std::min(boundsf[0], pos[i].x);
+        boundsf[1] = std::max(boundsf[1], pos[i].x);
+        boundsf[2] = std::min(boundsf[2], pos[i].y);
+        boundsf[3] = std::max(boundsf[3], pos[i].y);
+    }
+
+    uint32_t *pixel_buf = (uint32_t *)(dst_color.pixels);
+    float    *depth_buf = (float *)(dst_depth.pixels);
+    int       w = dst_color.w;
+    int       h = dst_color.h;
+
+    int xmin = sven::clamp(int(boundsf[0]), 0, w-1);
+    int xmax = sven::clamp(int(boundsf[1]), 0, w-1);
+    int ymin = sven::clamp(int(boundsf[2]), 0, h-1);
+    int ymax = sven::clamp(int(boundsf[3]), 0, h-1);
+
+    if (xmin == xmax || ymin == ymax)
+    {
+        return;
+    }
+
+
+    const BarData bData = BarData_load2(pos);
+    uint32_t bWeightsi[4];
+
+    vec4 sv_FragCoord;
+
+    for (int y=ymin; y<=ymax; y++)
+    {
+        for (int x=xmin; x<=xmax; x++)
+        {
+            barycentric2D(x, y, bData, bWeights);
+            std::memcpy(bWeightsi, bWeights, 4*sizeof(float));
+
+            if ((bWeightsi[0] | bWeightsi[1] | bWeightsi[2]) & 0x80000000)
+            {
+                continue;
+            }
+
+            sv_FragCoord.x = x;
+            sv_FragCoord.y = y;
+            sv_FragCoord.z = sven::baryp(pos[0].z, pos[1].z, pos[2].z, bWeights);
+            sv_FragCoord.w = 1.0f / sven::baryp(inv_z[0], inv_z[1], inv_z[2], bWeights);
+
+            if (sv_FragCoord.z < 0.0f || 1.0f < sv_FragCoord.z)
+            {
+                continue;
+            }
+
+            int idx = w*y + x;
+    
+            if (sv_FragCoord.z < depth_buf[idx])
+            {
+                depth_buf[idx] = sv_FragCoord.z;
+
+                float d = std::min(bWeights[0], std::min(bWeights[1], bWeights[2]));
+                      d = 1 - (1-d)*(1-d);
+                      d = (d > 0.1f) ? 1.0f : 0.0f;
+
+                vec3 N  = sven::baryp(norm[0], norm[1], norm[2], bWeights);
+                     N *= sv_FragCoord.w;
+                     N  = d * (normalize(N) * 0.5f + 0.5f);
 
                 vec3 L = normalize(vec3(1));
                 N = vec3(1) * max(dot(N, L), 0.0f);

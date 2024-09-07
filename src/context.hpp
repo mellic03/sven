@@ -23,6 +23,14 @@ private:
     Texture m_targets[2];
     SDL_Surface *m_nativeres_surface;
 
+    void vertex_stage( const VertexArray &src, VaryingArray &dst,
+                       const glm::mat4 &T, const glm::mat4 &P, const glm::mat4 &V );
+
+    void varying_stage( const VertexArray &src, int idx, VaryingArray &dst,
+                        const glm::mat4 &T, const glm::mat4 &P, const glm::mat4 &V );
+
+    void fragment_stage( const VaryingArray &buf, const glm::mat4 &V );
+
     void vertex_stage( const std::vector<Vertex> &src, std::vector<Vertex> &dst,
                        const glm::mat4 &T, const glm::mat4 &P, const glm::mat4 &V );
 

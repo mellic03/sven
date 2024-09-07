@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <vector>
 
 
 #ifndef GLM_ENABLE_EXPERIMENTAL
@@ -32,5 +33,41 @@ namespace sven
         glm::vec4 pos;
         glm::vec3 norm;
         glm::vec2 uv;
+    };
+
+    struct VertexArray
+    {
+        std::vector<glm::vec4> pos;
+        std::vector<glm::vec3> norm;
+        std::vector<glm::vec2> uv;
+
+        VertexArray() {  }
+
+        VertexArray( uint32_t size )
+        :   pos(size),
+            norm(size),
+            uv(size)
+        {
+
+        }
+
+        size_t size()
+        {
+            return pos.size();
+        }
+
+        void clear()
+        {
+            pos.clear();
+            norm.clear();
+            uv.clear();
+        }
+    };
+
+    struct VaryingArray
+    {
+        std::vector<glm::vec4> pos;
+        std::vector<glm::vec3> norm;
+        std::vector<glm::vec2> uv;
     };
 }

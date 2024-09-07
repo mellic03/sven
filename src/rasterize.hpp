@@ -32,5 +32,6 @@ namespace sven
 namespace sven::internal
 {
     void rasterize( const Vertex *buf, Texture &dst_depth, Texture &dst_color );
+    void rasterize( const VaryingArray &buf, int idx, Texture &dst_depth, Texture &dst_color );
 }
 

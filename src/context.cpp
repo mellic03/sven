@@ -151,3 +151,79 @@ sven::context::fragment_stage( const std::vector<Vertex> &buf, const glm::mat4 &
     }
 }
 
+
+
+
+void
+sven::context::varying_stage( const VertexArray &src, int idx, VaryingArray &dst,
+                              const glm::mat4 &T, const glm::mat4 &P,
+                              const glm::mat4 &V )
+{
+    static glm::vec4 pos[3];
+    static glm::vec3 norm[3];
+    static glm::vec2 uv[3];
+
+    std::memcpy(pos,  &src.pos[idx],  sizeof(pos));
+    std::memcpy(norm, &src.norm[idx], sizeof(norm));
+    std::memcpy(uv,   &src.uv[idx],   sizeof(uv));
+
+    const glm::vec3 viewpos = glm::vec3(glm::inverse(V)[3]);
+    const glm::vec2 size = glm::vec2(m_targets[0].w, m_targets[0].h);
+    const glm::mat4 PVT  = (P * V) * T;
+    const glm::mat3 T3   = glm::mat3(T);
+    const glm::mat3 V3T3 = glm::mat3(V) * T3;
+
+    glm::vec4 proj;
+    glm::vec3 world;
+    glm::vec3 ndc;
+    glm::vec2 screen;
+    float inv_z;
+
+    for (int i=0; i<3; i++)
+    {
+        world    = glm::vec3(T * pos[i]);
+        proj     = PVT * glm::vec4(glm::vec3(pos[i]), 1.0f);
+        inv_z    = 1.0f / std::max(proj.w, 0.00001f);
+    
+        ndc      = glm::vec3(proj) * inv_z;
+        screen   = size * (glm::vec2(ndc) * 0.5f + 0.5f);
+        screen.y = size.y - screen.y;
+
+        pos[i]  = glm::vec4(screen, ndc.z, inv_z);
+        norm[i] = glm::normalize(T3 * norm[i]);
+
+        if (glm::dot(norm[i], glm::normalize(viewpos - world)) < 0.0f)
+        {
+            return;
+        }
+    }
+
+    dst.pos.resize(dst.pos.size() + 3);
+    dst.norm.resize(dst.norm.size() + 3);
+    dst.uv.resize(dst.uv.size() + 3);
+
+    std::memcpy(&dst.pos[idx],  pos,  sizeof(pos));
+    std::memcpy(&dst.norm[idx], norm, sizeof(norm));
+    std::memcpy(&dst.uv[idx],   uv,   sizeof(uv));
+}
+
+void
+sven::context::vertex_stage( const VertexArray &src, VaryingArray &dst,
+                    const glm::mat4 &T, const glm::mat4 &P,
+                    const glm::mat4 &V )
+{
+    for (uint32_t i=0; i<src.pos.size(); i+=3)
+    {
+        varying_stage(src, i, dst, T, P, V);
+    }
+}
+
+
+void
+sven::context::fragment_stage( const VaryingArray &buf, const glm::mat4 &V )
+{
+    for (uint32_t i=0; i<buf.pos.size(); i+=3)
+    {
+        internal::rasterize(buf, i, m_targets[DEPTH_BUFFER_IDX], m_targets[COLOR_BUFFER_IDX]);
+    }
+}

@@ -10,4 +10,5 @@ namespace sven
 
     std::vector<Vertex> gen_cube();
     std::vector<Vertex> gen_isosphere( uint32_t subdivisions );
+    sven::VertexArray gen_isosphere2( uint32_t subdivisions );
 }
