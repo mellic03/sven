@@ -52,12 +52,13 @@ void sven::internal::rasterize( const Vertex *vertices, Texture &dst_depth, Text
     std::memcpy(buf, vertices, 3*sizeof(Vertex));
 
     vec3  color[3] = { vec3(255, 0, 0), vec3(0, 255, 0), vec3(0, 0, 255) };
+    vec3  norm[3];
     float inv_z[3] = { buf[0].pos.w,    buf[1].pos.w,    buf[2].pos.w    };
 
     for (int i=0; i<3; i++)
     {
-        buf[i].norm *= inv_z[i];
-        color[i]    *= inv_z[i];
+        norm[i]   = buf[i].norm * inv_z[i];
+        color[i] *= inv_z[i];
     }
 
     float boundsf[4] = {+INFINITY, -INFINITY, +INFINITY, -INFINITY};
@@ -108,8 +109,8 @@ void sven::internal::rasterize( const Vertex *vertices, Texture &dst_depth, Text
             barycentric2D(x, y, bData, bWeights);
             std::memcpy(bWeightsi, bWeights, 4*sizeof(float));
 
-            // if ((bWeightsi[0] | bWeightsi[1] | bWeightsi[2]) & 0x80000000)
-            if (bWeights[0] < 0.05f || bWeights[1] < 0.05f || bWeights[2] < 0.05f)
+            if ((bWeightsi[0] | bWeightsi[1] | bWeightsi[2]) & 0x80000000)
+            // if (bWeights[0] < 0.05f || bWeights[1] < 0.05f || bWeights[2] < 0.05f)
             {
                 continue;
             }
@@ -132,10 +133,22 @@ void sven::internal::rasterize( const Vertex *vertices, Texture &dst_depth, Text
             {
                 depth_buf[idx] = sv_FragCoord.z;
 
-                vec3 C  = sven::baryp(color[0], color[1], color[2], bWeights);
-                     C *= sv_FragCoord.w;
+                // vec3 C  = sven::baryp(color[0], color[1], color[2], bWeights);
+                //      C *= sv_FragCoord.w;
+                // uint32_t color = packRGB(C.r, C.g, C.b);
 
-                uint32_t color = packRGB(C.r, C.g, C.b);
+                float d = std::min(bWeights[0], std::min(bWeights[1], bWeights[2]));
+                      d = 1 - (1-d)*(1-d);
+
+                vec3 N  = sven::baryp(norm[0], norm[1], norm[2], bWeights);
+                     N *= sv_FragCoord.w;
+                     N  = (normalize(N) * 0.5f + 0.5f);
+
+                vec3 L = normalize(vec3(1));
+                N = vec3(1) * max(dot(N, L), 0.0f);
+                N = 255.0f *  clamp(N, 0.0f, 1.0f);
+
+                uint32_t color = packRGB(N.x, N.y, N.z);
 
                 pixel_buf[idx] = color;
             }

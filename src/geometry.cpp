@@ -2,6 +2,20 @@
 #include <iostream>
 
 
+void computeNormal( sven::Vertex *buf )
+{
+    glm::vec3 A, B, C, N;
+
+    A = buf[0].pos;
+    B = buf[1].pos;
+    C = buf[2].pos;
+    N = glm::normalize(glm::cross(B-A, C-A));
+
+    buf[0].norm = N;
+    buf[1].norm = N;
+    buf[2].norm = N;
+}
+
 
 void
 sven::tri_subdivide( const Vertex *src, std::vector<Vertex> &dst )
@@ -77,21 +91,6 @@ sven::gen_cube()
     buf[4].pos = glm::vec4(-hw, 0.5f, +hh, 1.0f);
     buf[5].pos = glm::vec4(+hw, 0.5f, +hh, 1.0f);
 
-
-    glm::vec3 A, B, C, N;
-
-    for (int i=0; i<2; i++)
-    {
-        A = buf[3*i+0].pos;
-        B = buf[3*i+1].pos;
-        C = buf[3*i+2].pos;
-        N = glm::normalize(glm::cross(B-A, C-A));
-
-        buf[3*i+0].norm = N;
-        buf[3*i+1].norm = N;
-        buf[3*i+2].norm = N;
-    }
-
     copy_face(&(buf[0]), &(buf[1*6]), +90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
     copy_face(&(buf[0]), &(buf[2*6]), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
     copy_face(&(buf[0]), &(buf[3*6]), 180.0f, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -101,6 +100,39 @@ sven::gen_cube()
     return buf;
 }
 
+// std::vector<sven::Vertex>
+// sven::gen_cube()
+// {
+//     float hw = 0.5f;
+//     float hh = 0.5f;
+
+//     std::vector<Vertex> buf(6*12);
+
+//     buf[2].pos = glm::vec4(0.0f, 0.5f, 0.0f, 1.0f);
+//     buf[0].pos = glm::vec4(+hw, 0.5f, -hh, 1.0f);
+//     buf[1].pos = glm::vec4(-hw, 0.5f, -hh, 1.0f);
+
+//     buf[3].pos  = glm::vec4(0.0f, 0.5f, 0.0f, 1.0f);
+//     buf[4].pos = glm::vec4(+hw, 0.5f, -hh, 1.0f);
+//     buf[5].pos = glm::vec4(+hw, 0.5f, +hh, 1.0f);
+
+//     buf[6].pos = glm::vec4(0.0f, 0.5f, 0.0f, 1.0f);
+//     buf[7].pos = glm::vec4(+hw, 0.5f, +hh, 1.0f);
+//     buf[8].pos = glm::vec4(-hw, 0.5f, +hh, 1.0f);
+
+//     buf[9].pos  = glm::vec4(0.0f, 0.5f, 0.0f, 1.0f);
+//     buf[10].pos = glm::vec4(-hw, 0.5f, +hh, 1.0f);
+//     buf[11].pos = glm::vec4(-hw, 0.5f, -hh, 1.0f);
+
+//     copy_face(&(buf[0]), &(buf[1*12]), +90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+//     copy_face(&(buf[0]), &(buf[2*12]), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+//     copy_face(&(buf[0]), &(buf[3*12]), 180.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+//     copy_face(&(buf[0]), &(buf[4*12]), -90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+//     copy_face(&(buf[0]), &(buf[5*12]), +90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+
+//     return buf;
+// }
+
 
 
 
@@ -109,28 +141,38 @@ sven::gen_isosphere( uint32_t subdivisions )
 {
     std::vector<Vertex> buf0 = gen_cube();
     std::vector<Vertex> buf1;
-    std::vector<Vertex> buf2;
 
-    buf2.clear();
-    for (int i=0; i<buf0.size(); i++)
+    auto *b0 = &buf0;
+    auto *b1 = &buf1;
+
+    for (uint32_t i=0; i<subdivisions; i++)
     {
-        tri_subdivide(&buf0[i], buf2);
+        auto &A = *b0;
+        auto &B = *b1;
+
+        B.clear();
+
+        for (int j=0; j<A.size(); j+=3)
+        {
+            tri_subdivide(&A[j], B);
+        }
+
+        std::swap(b0, b1);
     }
 
-    buf1.clear();
-    for (int i=0; i<buf2.size(); i++)
+    auto &A = *b0;
+    std::cout << "A.size(): " << A.size() << "\n";
+
+    for (int i=0; i<A.size(); i++)
     {
-        tri_subdivide(&buf2[i], buf1);
+        A[i].pos = glm::vec4(glm::normalize(glm::vec3(A[i].pos)), 1.0f);
     }
 
-    std::cout << "buf0.size(): " << buf0.size() << "\n";
-    std::cout << "buf1.size(): " << buf1.size() << "\n";
-
-    for (int i=0; i<buf1.size(); i++)
+    for (int i=0; i<A.size(); i+=3)
     {
-        buf1[i].pos = glm::vec4(glm::normalize(glm::vec3(buf1[i].pos)), 1.0f);
+        computeNormal(&A[i]);
     }
 
-    return buf1;
+    return A;
 }
 

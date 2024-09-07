@@ -11,10 +11,12 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 # ---------------------------------------------------
 find_package(SDL2 REQUIRED)
-find_package(SDL2_image REQUIRED)
+# find_package(SDL2_image REQUIRED)
 
 include_directories(${SDL2_INCLUDE_DIRS})
-include_directories(${SDL2_image_INCLUDE_DIRS})
+# include_directories(${SDL2_image_INCLUDE_DIRS})
+
+include_directories(external/)
 # ---------------------------------------------------
 
 
@@ -31,5 +33,5 @@ target_include_directories(
 target_link_libraries(
     ${PROJECT_NAME} PUBLIC
     SDL2
-    SDL2_image
+    # SDL2_image
 )

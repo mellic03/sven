@@ -26,10 +26,13 @@ private:
     void vertex_stage( const std::vector<Vertex> &src, std::vector<Vertex> &dst,
                        const glm::mat4 &T, const glm::mat4 &P, const glm::mat4 &V );
 
+    void vertex_stage_tri( const Vertex *src, std::vector<Vertex> &dst,
+                           const glm::mat4 &T, const glm::mat4 &P, const glm::mat4 &V );
+
     /**
      * @param buf Vertex data. buf.size() be divisible by 3.
     */
-    void fragment_stage( const std::vector<Vertex> &buf );
+    void fragment_stage( const std::vector<Vertex> &buf, const glm::mat4 &V );
 
 public:
          context( uint32_t w, uint32_t h );
