@@ -5,12 +5,12 @@
 #include "geometry.hpp"
 
 
-#define WIN_W (1024 / 16)
-#define WIN_H (1024 / 16)
-#define WIN_SCALE 16
+#define WIN_SCALE 4
+#define WIN_W (1024 / WIN_SCALE)
+#define WIN_H (1024 / WIN_SCALE)
 
-#define PLANE_NEAR 0.025f
-#define PLANE_FAR  512.0f
+#define PLANE_NEAR (0.1f)
+#define PLANE_FAR  (64.0f)
 
 
 int mx, my;
@@ -148,8 +148,8 @@ int main()
 
     sven::context ctx(WIN_W, WIN_H);
 
-    // auto cube_buf = sven::gen_isosphere(1);
-    auto cube_buf = sven::gen_cube();
+    auto cube_buf = sven::gen_isosphere(1);
+    // auto cube_buf = sven::gen_cube();
 
     bool running = true;
     float theta = 0.0f;

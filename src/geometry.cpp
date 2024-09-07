@@ -67,7 +67,7 @@ sven::gen_cube()
     float hw = 0.5f;
     float hh = 0.5f;
 
-    std::vector<Vertex> buf(2*6);
+    std::vector<Vertex> buf(6*6);
 
     buf[0].pos = glm::vec4(+hw, 0.5f, +hh, 1.0f);
     buf[1].pos = glm::vec4(+hw, 0.5f, -hh, 1.0f);
@@ -93,10 +93,10 @@ sven::gen_cube()
     }
 
     copy_face(&(buf[0]), &(buf[1*6]), +90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-    // copy_face(&(buf[0]), &(buf[2*6]), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-    // copy_face(&(buf[0]), &(buf[3*6]), 180.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-    // copy_face(&(buf[0]), &(buf[4*6]), -90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-    // copy_face(&(buf[0]), &(buf[5*6]), +90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+    copy_face(&(buf[0]), &(buf[2*6]), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+    copy_face(&(buf[0]), &(buf[3*6]), 180.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+    copy_face(&(buf[0]), &(buf[4*6]), -90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+    copy_face(&(buf[0]), &(buf[5*6]), +90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 
     return buf;
 }
@@ -109,10 +109,18 @@ sven::gen_isosphere( uint32_t subdivisions )
 {
     std::vector<Vertex> buf0 = gen_cube();
     std::vector<Vertex> buf1;
+    std::vector<Vertex> buf2;
 
+    buf2.clear();
     for (int i=0; i<buf0.size(); i++)
     {
-        tri_subdivide(&buf0[i], buf1);
+        tri_subdivide(&buf0[i], buf2);
+    }
+
+    buf1.clear();
+    for (int i=0; i<buf2.size(); i++)
+    {
+        tri_subdivide(&buf2[i], buf1);
     }
 
     std::cout << "buf0.size(): " << buf0.size() << "\n";
@@ -120,7 +128,7 @@ sven::gen_isosphere( uint32_t subdivisions )
 
     for (int i=0; i<buf1.size(); i++)
     {
-        buf1[i].pos = glm::normalize(buf1[i].pos);
+        buf1[i].pos = glm::vec4(glm::normalize(glm::vec3(buf1[i].pos)), 1.0f);
     }
 
     return buf1;

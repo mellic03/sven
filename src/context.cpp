@@ -13,7 +13,7 @@ sven::context::context( uint32_t w, uint32_t h )
     m_targets[1] = sven::texture_new(w, h, 4);
 
     clearColor(sven::COLOR_BUFFER_BIT, 0);
-    clearColorf(sven::DEPTH_BUFFER_BIT, 0.0f);
+    clearColorf(sven::DEPTH_BUFFER_BIT, 1.0f);
 
     m_nativeres_surface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
 }
@@ -76,7 +76,7 @@ void
 sven::context::drawArrays( const std::vector<Vertex> &buf, const glm::mat4 &T,
                            const glm::mat4 &P, const glm::mat4 &V )
 {
-    static std::vector<Vertex> VS_buffer(1024);
+    std::vector<Vertex> VS_buffer(buf.size());
 
     context::vertex_stage(buf, VS_buffer, T, P, V);
     context::fragment_stage(VS_buffer);
@@ -88,66 +88,26 @@ sven::context::vertex_stage( const std::vector<Vertex> &src, std::vector<Vertex>
                               const glm::mat4 &T, const glm::mat4 &P, const glm::mat4 &V )
 {
     const glm::vec2 size = glm::vec2(m_targets[0].w, m_targets[0].h);
-    const glm::mat4 PV   = P * V;
-    const glm::mat4 PVT  = PV * T;
-    const glm::mat4 VT   = V * T;
+    const glm::mat4 PVT  = (P * V) * T;
     const glm::mat3 T3   = glm::mat3(T);
-    const glm::mat3 V3   = glm::mat3(V);
-    const glm::mat3 V3T3 = V3 * T3;
 
-    glm::vec4 view, proj;
+    glm::vec4 proj;
     glm::vec3 ndc;
     glm::vec2 screen;
+    float inv_z;
 
     for (uint32_t i=0; i<src.size(); i++)
     {
-        view     = VT * glm::vec4(glm::vec3(src[i].pos), 1.0f);
         proj     = PVT * glm::vec4(glm::vec3(src[i].pos), 1.0f);
-        ndc      = glm::vec3(proj) / std::max(proj.w, 0.00001f);
+        inv_z    = 1.0f / std::max(proj.w, 0.00001f);
+    
+        ndc      = glm::vec3(proj) * inv_z;
         screen   = size * (glm::vec2(ndc) * 0.5f + 0.5f);
         screen.y = size.y - screen.y;
 
-        dst[i].pos  = glm::vec4(screen, ndc.z, proj.w);
+        dst[i].pos  = glm::vec4(screen, ndc.z, inv_z);
         dst[i].norm = glm::normalize(T3 * src[i].norm);
     }
-
-    // static Vertex temp[3];
-    // uint32_t cursor = 0;
-
-    // for (uint32_t i=0; i<src.size(); i+=3)
-    // {
-    //     for (uint32_t j=0; j<3; j++)
-    //     {
-    //         proj     = PV * T * glm::vec4(glm::vec3(src[i+j].pos), 1.0f);
-    //         ndc      = glm::vec3(proj) / proj.w;
-    //         screen   = size * (glm::vec2(ndc) * 0.5f + 0.5f);
-    //         screen.y = size.y - screen.y;
-
-    //         temp[j].pos  = glm::vec4(screen, ndc.z, 1.0f);
-    //         temp[j].norm = T3 * src[i].norm;
-    //     }
-
-    //     int verts_inside = 0;
-
-    //     for (uint32_t j=0; j<3; j++)
-    //     {
-    //         bool x_inside = sven::clamp(temp[j].pos.x, 0.0f, size.x-1.0f) == temp[j].pos.x;
-    //         bool y_inside = sven::clamp(temp[j].pos.y, 0.0f, size.y-1.0f) == temp[j].pos.y;
-
-    //         if (x_inside && y_inside)
-    //         {
-    //             verts_inside += 1;
-    //         }
-    //     }
-
-    //     if (verts_inside > 0)
-    //     {
-    //         dst[cursor+0] = temp[0];
-    //         dst[cursor+1] = temp[1];
-    //         dst[cursor+2] = temp[2];
-    //         cursor += 3;
-    //     }
-    // }
 }
 
 

@@ -52,7 +52,13 @@ void sven::internal::rasterize( const Vertex *vertices, Texture &dst_depth, Text
     std::memcpy(buf, vertices, 3*sizeof(Vertex));
 
     vec3  color[3] = { vec3(255, 0, 0), vec3(0, 255, 0), vec3(0, 0, 255) };
-    float inv_z[3] = { 1/buf[0].pos.z,  1/buf[1].pos.z,  1/buf[2].pos.z  };
+    float inv_z[3] = { buf[0].pos.w,    buf[1].pos.w,    buf[2].pos.w    };
+
+    for (int i=0; i<3; i++)
+    {
+        buf[i].norm *= inv_z[i];
+        color[i]    *= inv_z[i];
+    }
 
     float boundsf[4] = {+INFINITY, -INFINITY, +INFINITY, -INFINITY};
     int   boundsi[4];
@@ -89,11 +95,6 @@ void sven::internal::rasterize( const Vertex *vertices, Texture &dst_depth, Text
         return;
     }
 
-    for (int i=0; i<3; i++)
-    {
-        buf[i].norm /= buf[i].pos.z;
-        buf[i].pos.z = 1.0f / buf[i].pos.z;
-    }
 
     const BarData bData = BarData_load(buf);
     uint32_t bWeightsi[4];
@@ -107,51 +108,32 @@ void sven::internal::rasterize( const Vertex *vertices, Texture &dst_depth, Text
             barycentric2D(x, y, bData, bWeights);
             std::memcpy(bWeightsi, bWeights, 4*sizeof(float));
 
-            if ((bWeightsi[0] | bWeightsi[1] | bWeightsi[2]) & 0x80000000)
-            // if (bWeights[0] < 0.03f || bWeights[1] < 0.03f || bWeights[2] < 0.03f)
-            // if (bWeights[0] < 0.0f || bWeights[1] < 0.0f || bWeights[2] < 0.0f)
+            // if ((bWeightsi[0] | bWeightsi[1] | bWeightsi[2]) & 0x80000000)
+            if (bWeights[0] < 0.05f || bWeights[1] < 0.05f || bWeights[2] < 0.05f)
             {
                 continue;
             }
 
-
             sv_FragCoord.x = x;
             sv_FragCoord.y = y;
             sv_FragCoord.z = sven::baryp(buf[0].pos.z, buf[1].pos.z, buf[2].pos.z, bWeights);
+            sv_FragCoord.w = 1.0f / sven::baryp(inv_z[0], inv_z[1], inv_z[2], bWeights);
 
-            std::cout << sv_FragCoord.z << "\n";
+            // std::cout << sv_FragCoord.z << ",\t" << sv_FragCoord.w << "\n";
 
-            // if (sv_FragCoord.z < 0.0f || 1.0f < sv_FragCoord.z)
-            // {
-            //     continue;
-            // }
+            if (sv_FragCoord.z < 0.0f || 1.0f < sv_FragCoord.z)
+            {
+                continue;
+            }
 
             int idx = w*y + x;
     
-            if (sv_FragCoord.z > depth_buf[idx])
+            if (sv_FragCoord.z < depth_buf[idx])
             {
                 depth_buf[idx] = sv_FragCoord.z;
 
-                // vec3 N = sven::baryp(buf[0].norm, buf[1].norm, buf[2].norm, bWeights);
-                //           N /= sven::baryp(buf[0].pos.z, buf[1].pos.z, buf[2].pos.z, bWeights);
-                //           N = normalize(N);
-                //           N = N * 0.5f + 0.5f;
-                //           N = 255.0f * N;
-
-                // uint32_t color = packRGB(N.x, N.y, N.z);
-                // uint32_t color = packR(255.0f * (sv_FragCoord.z));
-
-                float inv_z_baryp = sven::baryp(inv_z[0], inv_z[1], inv_z[2], bWeights);
-
-                vec3 C  = sven::baryp(color[0]*inv_z[0], color[1]*inv_z[1], color[2]*inv_z[2], bWeights);
-                     C /= inv_z_baryp;
-                // uint32_t r = sven::baryp(int(255/buf[0].pos.z), 0, 0, bWeights);
-                // uint32_t g = sven::baryp(0, int(255/buf[1].pos.z), 0, bWeights);
-                // uint32_t b = sven::baryp(0, 0, int(255/buf[2].pos.z), bWeights);
-
-                // r /= sven::baryp(buf[0].pos.z, buf[1].pos.z, buf[2].pos.z, bWeights);
-                // g /= sven::baryp(buf[0].pos.z, buf[1].pos.z, buf[2].pos.z, bWeights);
-                // b /= sven::baryp(buf[0].pos.z, buf[1].pos.z, buf[2].pos.z, bWeights);
+                vec3 C  = sven::baryp(color[0], color[1], color[2], bWeights);
+                     C *= sv_FragCoord.w;
 
                 uint32_t color = packRGB(C.r, C.g, C.b);
 
