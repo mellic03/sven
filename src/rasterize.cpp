@@ -89,7 +89,6 @@ void sven::internal::rasterize( const VaryingArray &buf, int vidx,
     std::memcpy(uv,   &buf.uv[vidx],   sizeof(uv));
 
     vec2  dst_size = vec2(dst_color.w, dst_color.h);
-    vec3  color[3] = { vec3(255, 0, 0), vec3(0, 255, 0), vec3(0, 0, 255) };
     float inv_z[3] = { pos[0].z, pos[1].z, pos[2].z };
     float inv_w[3] = { pos[0].w, pos[1].w, pos[2].w };
 
@@ -97,7 +96,6 @@ void sven::internal::rasterize( const VaryingArray &buf, int vidx,
     {
         norm[i]  *= inv_w[i];
         uv[i]    *= inv_w[i];
-        color[i] *= inv_w[i];
     }
 
     uint32_t *pixel_buf = (uint32_t *)(dst_color.levels[0]);
@@ -154,13 +152,15 @@ void sven::internal::rasterize( const VaryingArray &buf, int vidx,
             {
                 depth_buf[idx] = 1/sv_FragCoord.z;
 
-                glm::vec3 N = sv_FragCoord.w * sven::baryp_ptr(norm, weights);
+                vec3 N = sv_FragCoord.w * sven::baryp_ptr(norm, weights);
                           N = normalize(N);
 
-                glm::vec2 texcoord = sv_FragCoord.w * sven::baryp_ptr(uv, weights);
-                glm::vec3 C = src_color.sample_f32(texcoord, computeMipLevel(x, y, wpos, weights));
+                vec2  texcoord = sv_FragCoord.w * sven::baryp_ptr(uv, weights);
+                float miplevel = computeMipLevel(x, y, wpos, weights);
+                vec3  color    = src_color.nearest_f32(texcoord, miplevel);
 
-                pixel_buf[idx] = packRGBf(C);
+
+                pixel_buf[idx] = packRGBf(color);
             }
         }
     }

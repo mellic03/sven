@@ -1,5 +1,6 @@
 #include <iostream>
 #include "window.hpp"
+#include "render.hpp"
 #include "rasterize.hpp"
 #include "context.hpp"
 #include "geometry.hpp"
@@ -9,8 +10,8 @@
 #define WIN_W ((64*24) / WIN_SCALE)
 #define WIN_H ((64*18) / WIN_SCALE)
 
-#define PLANE_NEAR (1.0f)
-#define PLANE_FAR  (100.0f)
+#define PLANE_NEAR (0.1f)
+#define PLANE_FAR  (50.0f)
 
 
 int mx, my;
@@ -160,15 +161,16 @@ int main()
 
 
 
-
     sven::context ctx(WIN_W, WIN_H);
-    ctx.cullFace(false);
+    sven::setCurrentContext(&ctx);
+    // ctx.cullFace(false);
 
     sven::Texture crate_tex = sven::texture_load("crate.png", true);
+    sven::Texture brick_tex = sven::texture_load("brick.png", true);
     sven::Texture grid_tex  = sven::texture_load("grid.png",  true);
     sven::Texture grass_tex = sven::texture_load("grass.png", true);
 
-    sven::VertexArray quad_buffer = sven::gen_quad(8.0f, 8.0f, 8.0f, 8.0f, 3);
+    sven::VertexArray quad_buffer = sven::gen_quad(8.0f, 8.0f, 4.0f, 4.0f, 3);
 
     std::vector<sven::VertexArray> buffers;
     float theta[3]  = { 0.0f, 0.0f, 0.0f };
@@ -205,7 +207,7 @@ int main()
             count = 1;
         }
 
-        ctx.clear(sven::COLOR_BUFFER_BIT | sven::DEPTH_BUFFER_BIT);
+        // ctx.clear(sven::COLOR_BUFFER_BIT | sven::DEPTH_BUFFER_BIT);
 
         poll_events(dt, &running);
         SDL_PumpEvents();
@@ -214,23 +216,23 @@ int main()
         update(dt);
         cam.updateView();
 
-        for (int i=0; i<buffers.size(); i++)
-        {
-            theta[i] += dt * dtheta[i];
+        // for (int i=0; i<buffers.size(); i++)
+        // {
+        //     // theta[i] += dt * dtheta[i];
 
-            glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(-2 + 2*i, 0, -2));
-            glm::mat4 R = glm::rotate(glm::mat4(1.0f), theta[i], glm::vec3(0, 1, 0));
+        //     glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(-2 + 2*i, 0, -2));
+        //     glm::mat4 R = glm::rotate(glm::mat4(1.0f), theta[i], glm::vec3(0, 1, 0));
 
-            ctx.bindTexture(crate_tex);
-            ctx.drawArrays(buffers[i], T*R, cam.P, cam.V);
-        }
+        //     ctx.bindTexture(crate_tex);
+        //     ctx.drawArrays(buffers[i], T*R, cam.P, cam.V);
+        // }
 
 
-        glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(0, -2, 0));
-        ctx.bindTexture(grass_tex);
-        ctx.drawArrays(quad_buffer, T, cam.P, cam.V);
+        // glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(0, -2, 0));
+        // ctx.bindTexture(brick_tex);
+        // ctx.drawArrays(quad_buffer, T, cam.P, cam.V);
 
-        ctx.swapWindow(win, win_surface);
+        // ctx.swapWindow(win, win_surface);
     }
 
 

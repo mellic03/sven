@@ -18,7 +18,6 @@
 namespace sven
 {
     struct Texture;
-    struct RenderTexture;
 
     template <typename T>
     Texture texture_new( uint32_t w, uint32_t h, uint32_t bpp );
@@ -43,42 +42,12 @@ struct sven::Texture
     uint32_t  fill = 0;
 
     uint32_t  sample_u32( const glm::vec2 &uv, int   level=0 );
-    glm::vec4 sample_f32( const glm::vec2 &uv, float level=0.0f );
+    uint32_t  sample_u32( int x, int y, int level=0 );
 
-};
+    glm::vec4 nearest_f32( const glm::vec2 &uv, float level=0.0f );
+    glm::vec4 billinear_f32( const glm::vec2 &uv, float level=0.0f );
 
 
-struct sven::RenderTexture
-{
-    std::vector<uint32_t *> color_tiles;
-    std::vector<float *>    depth_tiles;
-    uint32_t w, h;
-
-    RenderTexture() {  };
-
-    RenderTexture( uint32_t width, uint32_t height )
-    {
-        w = width;
-        h = height;
-
-        if (w == 0 || h == 0 || w%64 != 0 || h%64 != 0)
-        {
-            std::cout << "w, h must be divisble by 64!\n";
-            exit(1);
-        }
-
-        uint32_t grid_w = w/64;
-        uint32_t grid_h = h/64;
-
-        for (uint32_t i=0; i<grid_w*grid_h; i++)
-        {
-            color_tiles.push_back(new uint32_t[64*64]);
-            depth_tiles.push_back(new float[64*64]);
-
-            sven::memset32(color_tiles.back(), 0, 64*64);
-            sven::memset32(depth_tiles.back(), 0, 64*64);
-        }
-    }
 };
 
 

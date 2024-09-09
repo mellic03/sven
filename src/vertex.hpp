@@ -38,6 +38,25 @@ namespace sven
         glm::vec2 uv;
     };
 
+
+    struct VertexBuffer
+    {
+        const uint32_t size;
+        std::vector<glm::vec3> pos;
+        std::vector<glm::vec3> norm;
+        std::vector<glm::vec3> uv;
+
+        VertexBuffer( uint32_t n )
+        :   size(n),
+            pos(n),
+            norm(n),
+            uv(n)
+        {
+
+        }
+    };
+
+
     struct VertexArray
     {
         float radiusSq = 0.0f;

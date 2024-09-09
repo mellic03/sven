@@ -6,22 +6,25 @@
 
 namespace sven
 {
-    struct VS_queue
-    {
-        RenderTexture target;
-        std::vector<VertexArray> bins;
-    };
-
     struct VS_in
     {
         glm::vec3 pos;
         glm::vec3 norm;
-        glm::vec3 uv;
+        glm::vec2 uv;
     };
 
-    void renderstage_vertex( VS_queue &VS );
+    struct VS_out
+    {
+        glm::vec3 pos;
+        glm::vec3 norm;
+        glm::vec2 uv;
+    };
 
-    glm::vec4 shader_vertex();
+    struct VS_uniforms
+    {
+        glm::mat4 P, V, M;
+    };
+
 }
 
 

@@ -18,8 +18,23 @@ sven::Texture::sample_u32( const glm::vec2 &uv, int level )
     return src[src_w*y + x];
 }
 
+uint32_t
+sven::Texture::sample_u32( int x, int y, int level )
+{
+    uint32_t *src = (uint32_t *)(levels[level]);
+    uint32_t  src_w = w >> level;
+    uint32_t  src_h = h >> level;
+
+    x %= src_w;
+    y %= src_h;
+
+    return src[src_w*y + x];
+}
+
+
+
 glm::vec4
-sven::Texture::sample_f32( const glm::vec2 &uv, float level )
+sven::Texture::nearest_f32( const glm::vec2 &uv, float level )
 {
     float lo    = glm::clamp(glm::floor(level), 0.0f, float(MAX_LEVEL));
     float hi    = glm::clamp(glm::ceil(level),  0.0f, float(MAX_LEVEL));
@@ -30,6 +45,42 @@ sven::Texture::sample_f32( const glm::vec2 &uv, float level )
 
     return glm::mix(a, b, alpha);
 }
+
+
+
+glm::vec4
+sven::Texture::billinear_f32( const glm::vec2 &uv, float level )
+{
+    float lo    = glm::clamp(glm::floor(level), 0.0f, float(MAX_LEVEL));
+    float hi    = glm::clamp(glm::ceil(level),  0.0f, float(MAX_LEVEL));
+    float alpha = level - lo;
+    int   mip   = glm::clamp(int(level), 0, int(MAX_LEVEL));
+
+    uint32_t *src = (uint32_t *)(levels[mip]);
+    uint32_t  src_w = (w >> mip);
+    uint32_t  src_h = (h >> mip);
+
+    glm::vec2 tsize    = glm::vec2(src_w, src_h);;
+    glm::vec2 texcoord = uv + (0.5f / tsize);
+    glm::vec2 texel    = texcoord * tsize;
+
+    float u_factor = texel.x - glm::floor(texel.x);
+    float v_factor = texel.y - glm::floor(texel.y);
+
+
+    glm::vec4 UL   = nearest_f32((texel + glm::vec2(0, 0)) / tsize, level);
+    glm::vec4 UR   = nearest_f32((texel + glm::vec2(1, 0)) / tsize, level);
+    glm::vec4 ULUR = glm::mix(UL, UR, u_factor);
+
+    glm::vec4 DL   = nearest_f32((texel + glm::vec2(0, 1)) / tsize, level);
+    glm::vec4 DR   = nearest_f32((texel + glm::vec2(1, 1)) / tsize, level);
+    glm::vec4 DLDR = glm::mix(DL, DR, u_factor);
+
+    return glm::mix(ULUR, DLDR, v_factor);
+}
+
+
+
 
 
 
