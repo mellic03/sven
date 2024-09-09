@@ -22,8 +22,8 @@ namespace sven
 
 namespace sven::internal
 {
-    void rasterize( const VaryingArray &buf, int idx,
-                    Texture &dst_depth, Texture &dst_color, Texture &src_color,
-                    const RenderState &RS );
+    // void rasterize( const VaryingArray &buf, int idx,
+    //                 Texture &dst_depth, Texture &dst_color, Texture &src_color,
+    //                 const RenderState &RS );
 }
 

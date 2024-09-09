@@ -72,96 +72,96 @@ float computeMipLevel( int x, int y, glm::vec3 wpos[3], float weights[3] )
 }
 
 
-void sven::internal::rasterize( const VaryingArray &buf, int vidx,
-                                Texture &dst_depth, Texture &dst_color, Texture &src_color,
-                                const RenderState &RS )
-{
-    using namespace glm;
+// void sven::internal::rasterize( const VaryingArray &buf, int vidx,
+//                                 Texture &dst_depth, Texture &dst_color, Texture &src_color,
+//                                 const RenderState &RS )
+// {
+//     using namespace glm;
 
-    static vec4 pos[3];
-    static vec3 wpos[3];
-    static vec3 norm[3];
-    static vec2 uv[3];
+//     static vec4 pos[3];
+//     static vec3 wpos[3];
+//     static vec3 norm[3];
+//     static vec2 uv[3];
 
-    std::memcpy(pos,  &buf.pos[vidx],  sizeof(pos));
-    std::memcpy(wpos, &buf.wpos[vidx], sizeof(wpos));
-    std::memcpy(norm, &buf.norm[vidx], sizeof(norm));
-    std::memcpy(uv,   &buf.uv[vidx],   sizeof(uv));
+//     std::memcpy(pos,  &buf.pos[vidx],  sizeof(pos));
+//     std::memcpy(wpos, &buf.wpos[vidx], sizeof(wpos));
+//     std::memcpy(norm, &buf.norm[vidx], sizeof(norm));
+//     std::memcpy(uv,   &buf.uv[vidx],   sizeof(uv));
 
-    vec2  dst_size = vec2(dst_color.w, dst_color.h);
-    float inv_z[3] = { pos[0].z, pos[1].z, pos[2].z };
-    float inv_w[3] = { pos[0].w, pos[1].w, pos[2].w };
+//     vec2  dst_size = vec2(dst_color.w, dst_color.h);
+//     float inv_z[3] = { pos[0].z, pos[1].z, pos[2].z };
+//     float inv_w[3] = { pos[0].w, pos[1].w, pos[2].w };
 
-    for (int i=0; i<3; i++)
-    {
-        norm[i]  *= inv_w[i];
-        uv[i]    *= inv_w[i];
-    }
+//     for (int i=0; i<3; i++)
+//     {
+//         norm[i]  *= inv_w[i];
+//         uv[i]    *= inv_w[i];
+//     }
 
-    uint32_t *pixel_buf = (uint32_t *)(dst_color.levels[0]);
-    float    *depth_buf = (float *)(dst_depth.levels[0]);
-    int       w = dst_color.w;
-    int       h = dst_color.h;
+//     uint32_t *pixel_buf = (uint32_t *)(dst_color.levels[0]);
+//     float    *depth_buf = (float *)(dst_depth.levels[0]);
+//     int       w = dst_color.w;
+//     int       h = dst_color.h;
 
-    int xmin = sven::clamp(int(std::min(pos[0].x, std::min(pos[1].x, pos[2].x))), 0, w-1);
-    int xmax = sven::clamp(int(std::max(pos[0].x, std::max(pos[1].x, pos[2].x))), 0, w-1);
-    int ymin = sven::clamp(int(std::min(pos[0].y, std::min(pos[1].y, pos[2].y))), 0, h-1);
-    int ymax = sven::clamp(int(std::max(pos[0].y, std::max(pos[1].y, pos[2].y))), 0, h-1);
+//     int xmin = sven::clamp(int(std::min(pos[0].x, std::min(pos[1].x, pos[2].x))), 0, w-1);
+//     int xmax = sven::clamp(int(std::max(pos[0].x, std::max(pos[1].x, pos[2].x))), 0, w-1);
+//     int ymin = sven::clamp(int(std::min(pos[0].y, std::min(pos[1].y, pos[2].y))), 0, h-1);
+//     int ymax = sven::clamp(int(std::max(pos[0].y, std::max(pos[1].y, pos[2].y))), 0, h-1);
 
-    if (xmin == xmax || ymin == ymax)
-    {
-        return;
-    }
+//     if (xmin == xmax || ymin == ymax)
+//     {
+//         return;
+//     }
 
-    BarData  bData = BarData_load(pos);
-    float    weights[3];
+//     BarData  bData = BarData_load(pos);
+//     float    weights[3];
 
-    vec4 sv_FragCoord;
+//     vec4 sv_FragCoord;
 
-    for (int y=ymin; y<=ymax; y++)
-    {
-        for (int x=xmin; x<=xmax; x++)
-        {
-            // if (y%32 == 0 || x%32 == 0)
-            // {
-            //     pixel_buf[w*y + x] = 0;
-            //     depth_buf[w*y + x] = 1.0f;
-            //     continue;
-            // }
+//     for (int y=ymin; y<=ymax; y++)
+//     {
+//         for (int x=xmin; x<=xmax; x++)
+//         {
+//             // if (y%32 == 0 || x%32 == 0)
+//             // {
+//             //     pixel_buf[w*y + x] = 0;
+//             //     depth_buf[w*y + x] = 1.0f;
+//             //     continue;
+//             // }
 
-            barycentric2D(x, y, bData, weights);
+//             barycentric2D(x, y, bData, weights);
 
-            if (weights[0] < 0.0f || weights[1] < 0.0f || weights[2] < 0.0f)
-            {
-                continue;
-            }
+//             if (weights[0] < 0.0f || weights[1] < 0.0f || weights[2] < 0.0f)
+//             {
+//                 continue;
+//             }
 
-            sv_FragCoord.x = x;
-            sv_FragCoord.y = y;
-            sv_FragCoord.z = 1.0f / sven::baryp_ptr(inv_z, weights);
-            sv_FragCoord.w = 1.0f / sven::baryp_ptr(inv_w, weights);
+//             sv_FragCoord.x = x;
+//             sv_FragCoord.y = y;
+//             sv_FragCoord.z = 1.0f / sven::baryp_ptr(inv_z, weights);
+//             sv_FragCoord.w = 1.0f / sven::baryp_ptr(inv_w, weights);
 
-            if (sv_FragCoord.z <= 0.0f)
-            {
-                continue;
-            }
+//             if (sv_FragCoord.z <= 0.0f)
+//             {
+//                 continue;
+//             }
 
-            int idx = w*y + x;
+//             int idx = w*y + x;
     
-            if (1/sv_FragCoord.z > depth_buf[idx])
-            {
-                depth_buf[idx] = 1/sv_FragCoord.z;
+//             if (1/sv_FragCoord.z > depth_buf[idx])
+//             {
+//                 depth_buf[idx] = 1/sv_FragCoord.z;
 
-                vec3 N = sv_FragCoord.w * sven::baryp_ptr(norm, weights);
-                          N = normalize(N);
+//                 vec3 N = sv_FragCoord.w * sven::baryp_ptr(norm, weights);
+//                           N = normalize(N);
 
-                vec2  texcoord = sv_FragCoord.w * sven::baryp_ptr(uv, weights);
-                float miplevel = computeMipLevel(x, y, wpos, weights);
-                vec3  color    = src_color.nearest_f32(texcoord, miplevel);
+//                 vec2  texcoord = sv_FragCoord.w * sven::baryp_ptr(uv, weights);
+//                 float miplevel = computeMipLevel(x, y, wpos, weights);
+//                 vec3  color    = src_color.nearest_f32(texcoord, miplevel);
 
 
-                pixel_buf[idx] = packRGBf(color);
-            }
-        }
-    }
-}
+//                 pixel_buf[idx] = packRGBf(color);
+//             }
+//         }
+//     }
+// }

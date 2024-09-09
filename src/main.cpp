@@ -5,10 +5,11 @@
 #include "context.hpp"
 #include "geometry.hpp"
 
+#define main WinMain
 
 #define WIN_SCALE 2
-#define WIN_W ((64*24) / WIN_SCALE)
-#define WIN_H ((64*18) / WIN_SCALE)
+#define WIN_W ((64*8) / WIN_SCALE)
+#define WIN_H ((64*8) / WIN_SCALE)
 
 #define PLANE_NEAR (0.1f)
 #define PLANE_FAR  (50.0f)

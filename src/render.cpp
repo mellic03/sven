@@ -13,7 +13,15 @@ sven::vbuffer_new( uint32_t stride, uint32_t count )
 void
 sven::drawArrays( const VertexBuffer &buf )
 {
-    sven::context &ctx = *sven::getCurrentContext();
+    auto &ctx    = *sven::getCurrentContext();
+    auto &binner = ctx.binner();
+
+    int res = binner.insert(buf);
+
+    if (res == -1)
+    {
+        // ruh roh
+    } 
 
 }
 

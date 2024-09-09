@@ -39,6 +39,14 @@ namespace sven
     };
 
 
+    struct Primitive
+    {
+        glm::vec3 pos[3];
+        glm::vec3 norm[3];
+        glm::vec2 uv[3];
+    };
+
+
     struct VertexBuffer
     {
         const uint32_t size;
@@ -54,6 +62,7 @@ namespace sven
         {
 
         }
+
     };
 
 

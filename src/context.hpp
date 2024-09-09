@@ -40,6 +40,8 @@ public:
     }
 
     void swapWindow( SDL_Window*, SDL_Surface* );
+
+    vertex_binner &binner() { return m_binner; }
 };
 
 
