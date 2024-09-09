@@ -6,9 +6,10 @@
 
 namespace sven
 {
-    void tri_subdivide( const Vertex *src, std::vector<Vertex> &dst );
+    void tri_subdivide( const VertexArray &src, int idx, VertexArray &dst );
 
-    std::vector<Vertex> gen_cube();
-    std::vector<Vertex> gen_isosphere( uint32_t subdivisions );
-    sven::VertexArray gen_isosphere2( uint32_t subdivisions );
+    void gen_quad( sven::VertexArray &dst, int idx );
+    sven::VertexArray gen_quad( float xscale, float zscale, float uscale, float vscale, int subdivisions=1 );
+    sven::VertexArray gen_cube();
+    sven::VertexArray gen_isosphere( uint32_t subdivisions );
 }

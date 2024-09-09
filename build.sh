@@ -7,4 +7,4 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=RELEASE Ninja ../
 ninja
 
-# cp ./CA ../
+cp ./sven ../

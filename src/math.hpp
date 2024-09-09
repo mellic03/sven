@@ -18,6 +18,12 @@ namespace sven
         return a*weights[0] + b*weights[1] + c*weights[2];
     }
 
+    template <typename T>
+    T baryp_ptr( const T *data, float *weights )
+    {
+        return data[0]*weights[0] + data[1]*weights[1] + data[2]*weights[2];
+    }
+
 
     template <typename T>
     T clamp( T n, T a, T b )

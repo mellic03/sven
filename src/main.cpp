@@ -5,12 +5,12 @@
 #include "geometry.hpp"
 
 
-#define WIN_SCALE 1
-#define WIN_W (1024 / WIN_SCALE)
-#define WIN_H (720 / WIN_SCALE)
+#define WIN_SCALE 2
+#define WIN_W ((64*24) / WIN_SCALE)
+#define WIN_H ((64*18) / WIN_SCALE)
 
-#define PLANE_NEAR (0.1f)
-#define PLANE_FAR  (64.0f)
+#define PLANE_NEAR (1.0f)
+#define PLANE_FAR  (100.0f)
 
 
 int mx, my;
@@ -32,6 +32,19 @@ struct sven_Camera
             PLANE_NEAR,
             PLANE_FAR
         );
+    }
+
+    void updateView()
+    {
+        const float PI = float(M_PI);
+        // pitch = glm::mod(pitch+PI, 2.0f*PI) - PI;
+        // yaw   = glm::mod(yaw+PI,   2.0f*PI) - PI;
+
+        glm::mat3 Ryaw    = glm::mat3(glm::rotate(glm::mat4(1), yaw, glm::vec3(0, 1, 0)));
+        glm::mat3 Rpitch  = glm::mat3(glm::rotate(glm::mat4(1), pitch, glm::vec3(1, 0, 0)));
+        glm::vec3 viewdir = glm::normalize(Ryaw * Rpitch * glm::vec3(0, 0, -1));
+
+        V = glm::lookAt(pos, pos+0.01f*viewdir, glm::vec3(0, 1, 0));
     }
 
     glm::vec3 getUp()
@@ -84,8 +97,8 @@ void on_events( float dt, SDL_Event e )
         case SDL_MOUSEMOTION:
             if (SDL_GetRelativeMouseMode() == SDL_TRUE)
             {
-                cam.pitch += 0.0025f * e.motion.yrel;
-                cam.yaw   += 0.0025f * e.motion.xrel;
+                cam.pitch -= 0.0025f * e.motion.yrel;
+                cam.yaw   -= 0.0025f * e.motion.xrel;
             }
         break;
 
@@ -127,7 +140,7 @@ void update( float dt )
 
 
 
-int WinMain()
+int main()
 {
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -145,16 +158,31 @@ int WinMain()
 
     win_surface = SDL_GetWindowSurface(win);
 
-    sven::context ctx(WIN_W, WIN_H);
 
-    auto cube_buf0 = sven::gen_isosphere(0);
-    auto cube_buf1 = sven::gen_isosphere(1);
-    auto cube_buf2 = sven::gen_isosphere(2);
-    auto cube_buf3 = sven::gen_isosphere(3);
-    auto cube_buf4 = sven::gen_isosphere(4);
+
+
+    sven::context ctx(WIN_W, WIN_H);
+    ctx.cullFace(false);
+
+    sven::Texture crate_tex = sven::texture_load("crate.png", true);
+    sven::Texture grid_tex  = sven::texture_load("grid.png",  true);
+    sven::Texture grass_tex = sven::texture_load("grass.png", true);
+
+    sven::VertexArray quad_buffer = sven::gen_quad(8.0f, 8.0f, 8.0f, 8.0f, 3);
+
+    std::vector<sven::VertexArray> buffers;
+    float theta[3]  = { 0.0f, 0.0f, 0.0f };
+    float dtheta[3] = { (rand()%100-50)/100.0f, (rand()%100-50)/100.0f, (rand()%100-50)/100.0f };
+    for (int i=0; i<3; i++)
+    {
+        buffers.push_back(sven::gen_isosphere(i));
+    }
+
+
+
+
 
     bool running = true;
-    float theta = 0.0f;
 
     uint64_t prev_ticks = SDL_GetTicks64();
     int count = 0;
@@ -183,36 +211,24 @@ int WinMain()
         SDL_PumpEvents();
         SDL_GetMouseState(&mx, &my);
 
-
         update(dt);
-        // sven::quad(mx, my, 256, 256, theta, sven::packRGB(50, 255, 150));
-        theta += 0.001f;
+        cam.updateView();
+
+        for (int i=0; i<buffers.size(); i++)
+        {
+            theta[i] += dt * dtheta[i];
+
+            glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(-2 + 2*i, 0, -2));
+            glm::mat4 R = glm::rotate(glm::mat4(1.0f), theta[i], glm::vec3(0, 1, 0));
+
+            ctx.bindTexture(crate_tex);
+            ctx.drawArrays(buffers[i], T*R, cam.P, cam.V);
+        }
 
 
-        glm::quat QPitch = glm::angleAxis(cam.pitch, glm::vec3(1, 0, 0));
-        glm::quat QYaw   = glm::angleAxis(cam.yaw, glm::vec3(0, 1, 0));
-
-        cam.V = glm::lookAt(
-            cam.pos,
-            cam.pos + glm::vec3(0.0f, 0.0f, -1.0f),
-            glm::vec3(0.0f, 1.0f, 0.0f)
-        );
-
-        cam.V = glm::mat4_cast(QPitch * QYaw) * cam.V;
-
-
-        glm::mat4 T0 = glm::translate(glm::mat4(1.0f), glm::vec3(-4, 0, -2));
-        glm::mat4 T1 = glm::translate(glm::mat4(1.0f), glm::vec3(-2, 0, -2));
-        glm::mat4 T2 = glm::translate(glm::mat4(1.0f), glm::vec3( 0, 0, -2));
-        glm::mat4 T3 = glm::translate(glm::mat4(1.0f), glm::vec3(+2, 0, -2));
-        glm::mat4 T4 = glm::translate(glm::mat4(1.0f), glm::vec3(+4, 0, -2));
-        ctx.drawArrays(cube_buf0, T0, cam.P, cam.V);
-        ctx.drawArrays(cube_buf1, T1, cam.P, cam.V);
-        ctx.drawArrays(cube_buf2, T2, cam.P, cam.V);
-        ctx.drawArrays(cube_buf3, T3, cam.P, cam.V);
-        ctx.drawArrays(cube_buf4, T4, cam.P, cam.V);
-
-
+        glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(0, -2, 0));
+        ctx.bindTexture(grass_tex);
+        ctx.drawArrays(quad_buffer, T, cam.P, cam.V);
 
         ctx.swapWindow(win, win_surface);
     }

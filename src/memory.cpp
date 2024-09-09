@@ -5,8 +5,10 @@
 
 
 void
-sven::memset32( uint32_t *dst, uint32_t value, uint32_t count )
+sven::memset32( void *ptr, uint32_t value, uint32_t count )
 {
+    uint32_t *dst = (uint32_t *)(ptr);
+
     __m128i  reg = _mm_set1_epi32(value);
     uint32_t rem = count % 4;
 
